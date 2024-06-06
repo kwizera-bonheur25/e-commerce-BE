@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Socket.IO Notifications Test</title>
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				background-color: #f0f2f5;
+				color: #333;
+				margin: 0;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				height: 100vh;
+			}
+
+			#notificationsContainer {
+				background-color: #fff;
+				box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+				border-radius: 8px;
+				overflow: hidden;
+				width: 400px;
+				max-width: 100%;
+			}
+
+			#notificationsContainer p {
+				padding: 16px;
+				margin: 0;
+				border-bottom: 1px solid #e0e0e0;
+			}
+
+			#newNotifications {
+				max-height: 300px;
+				overflow-y: auto;
+			}
+
+			#newNotifications p {
+				padding: 16px;
+				margin: 0;
+				border-bottom: 1px solid #e0e0e0;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="notificationsContainer">
+			<p id="mes">Initial text message, Notifications to follow</p>
+			<div id="newNotifications"></div>
+		</div>
+
+		<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/jwt-decode/build/jwt-decode.min.js"></script>
+		<script>
+			let socket = "";
+			const token = JSON.parse(localStorage.getItem("loggedUser1"));
+			const decodedToken = jwt_decode(token);
+			const userId = decodedToken.id;
+
+			if (!socket || !socket.connected) {
+				socket = io({
+					auth: {
+						token: token,
+					},
+				});
+
+				socket.on("notifications", (notifications) => {
+					notifications.forEach((notification) => {
+						const newNotification = document.createElement("p");
+						newNotification.innerText = notification.message;
+						document
+							.getElementById("newNotifications")
+							.appendChild(newNotification);
+					});
+					document.getElementById("newNotifications").scrollTop =
+						document.getElementById("newNotifications").scrollHeight;
+				});
+
+				socket.on("notification", (data) => {
+					if (data.userId === userId) {
+						const newNotification = document.createElement("p");
+						newNotification.innerText = data.message;
+						document
+							.getElementById("newNotifications")
+							.appendChild(newNotification);
+						document.getElementById("newNotifications").scrollTop =
+							document.getElementById("newNotifications").scrollHeight;
+					}
+				});
+			}
+		</script>
+	</body>
+</html>

@@ -1,0 +1,81 @@
+name: build
+on:
+  push:
+    branches:
+      - develop
+      - "*"
+  pull_request:
+    branches:
+      - develop
+      - "*"
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ secrets.BASE_URL}}
+      HOST: ${{ secrets.HOST}}
+      SERVICE: ${{ secrets.SERVICE}}
+      EMAIL: ${{ secrets.EMAIL}}
+      PASSWORD: ${{ secrets.PASSWORD}}
+      DB_TEST_URL: ${{ secrets.DB_TEST_URL }}
+      DEV_MODE: ${{ secrets.DEV_MODE }}
+      DB_HOSTED_MODE: ${{ secrets.DB_HOSTED_MODE }}
+      ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
+      SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+      CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+      COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+      SENDER_NAME: ${{ secrets.SENDER_NAME }}
+      GOOGLE_CALLBACK_URL: ${{ secrets.GOOGLE_CALLBACK_URL }}
+      GOOGLE_SECRET_ID: ${{ secrets.GOOGLE_SECRET_ID }}
+      DB_PROD_URL: ${{ secrets.DB_PROD_URL }}
+      DB_DEV_URL: ${{ secrets.DB_DEV_URL }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+      CLOUDINARY_FOLDER_NAME: ${{ secrets.CLOUDINARY_FOLDER_NAME }}
+      SERVER_URL: ${{ secrets.SERVER_URL }}
+      DEPLOYED_URL: ${{ secrets.DEPLOYED_URL }}
+      PASS_EXPIRE_DURATION: ${{ secrets.PASS_EXPIRE_DURATION }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+
+      MTN_CALLBACK_HOST: ${{ secrets.MTN_CALLBACK_HOST }}
+      MTN_CALLBACK_URL: ${{ secrets.MTN_CALLBACK_URL }}
+      MTN_MOMO_USERNAME: ${{ secrets.MTN_MOMO_USERNAME }}
+      MTN_MOMO_API_KEY: ${{ secrets.MTN_MOMO_API_KEY }}
+      MTN_MOMO_SUBSCRIPTION_KEY: ${{ secrets.MTN_MOMO_SUBSCRIPTION_KEY }}
+      MTN_MOMO_REQUEST_PAYMENT_URL: ${{ secrets.MTN_MOMO_REQUEST_PAYMENT_URL }}
+      MTN_MOMO_TARGET_ENVIRONMENT: ${{ secrets.MTN_MOMO_TARGET_ENVIRONMENT }}
+      MTN_MOMO_GET_TOKEN_URL: ${{ secrets.MTN_MOMO_GET_TOKEN_URL }}
+      MTN_MOMO_CURRENCY: ${{ secrets.MTN_MOMO_CURRENCY }}
+
+    strategy:
+      matrix:
+        node-version: ["20.x"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+      - name: Install dependencies
+        run: npm install
+      - name: Run tests
+        run: npm run test
+
+      - name: Setup Code Climate test-reporter
+        run: |
+          # Download test reporter as a static binary
+          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+          chmod +x ./cc-test-reporter
+          ./cc-test-reporter before-build
+      - name: Store coverage report
+        if: always()
+        run: mkdir -p coverage
+      - name: Send coverage report to Code Climate
+        if: always()
+        run: ./cc-test-reporter after-build -t lcov -p coverage
+      - name: coveralls
+        run: npx coveralls < coverage/lcov.info

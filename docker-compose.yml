@@ -1,0 +1,37 @@
+version: "3.8"
+
+services:
+  postgresdb:
+    image: postgres
+    restart: on-failure
+    env_file: ./.env
+    environment:
+      - POSTGRES_PASSWORD:$POSTGRES_PASSWORD
+      - DB_DEV_URL=$DB_DEV_URL
+      - DB_TEST_URL=$DB_TEST_URL
+      - PORT=$PORT
+    ports:
+      - "5433:5432"
+    volumes:
+      - db:/var/lib/postgres
+
+  express-server:
+    depends_on:
+      - postgresdb
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: on-failure
+    env_file: ./.env
+    ports:
+      - $PORT:$PORT
+    environment:
+      - POSTGRES_PASSWORD:$POSTGRES_PASSWORD
+      - DB_DEV_URL=$DB_DEV_URL
+      - DB_TEST_URL=$DB_TEST_URL
+      - PORT=$PORT
+    stdin_open: true
+    tty: true
+
+volumes:
+  db:
